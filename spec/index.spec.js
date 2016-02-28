@@ -17,46 +17,113 @@ describe('range', function() {
   })
 })
 
-describe('game reducer', function() {
+describe('game', function() {
   describe('laps', function() {
     it('should return new state with laps merged with existing state', function() {
       var action = {type: challenge.actions.laps, laps: 2}
       var state = { height: 1000 }
-      var nextState = challenge.gameReducer(state, action)
+      var nextState = challenge.game(state, action)
       assert.deepEqual(nextState, { height: 1000, laps: 2 })
-    })
-
-    it('should return current state when there is no action', function() {
-      var action = {type: challenge.actions.laps, laps: 2}
-      var state = { height: 1000 }
-      var nextState = challenge.gameReducer(state)
-      assert.deepEqual(nextState, { height: 1000 })
     })
 
     it('should be reduced', function() {
       var action = {type: challenge.actions.laps, laps: 2}
       var state = {}
-      var nextState = challenge.gameReducer(state, action)
+      var nextState = challenge.game(state, action)
       assert.deepEqual(nextState, { laps: 2 })
     })
 
     it('should be able to return current state with unknown action', function() {
       var state = { laps: 4 }
-      var nextState = challenge.gameReducer(state, {type: "unknown"});
+      var nextState = challenge.game(state, {type: "unknown"});
       assert.deepEqual(nextState, { laps: 4 })
     })
   })
 
   describe('checkpoints', function() {
     it('should be able to be mapped through toCheckPoint', function() {
-      assert.deepEqual(challenge.toCheckPoint('90 80'), { x: 90, y: 80 })
+      assert.deepEqual(challenge.toCheckPoint('90 80', 0), { id: 1, x: 90, y: 80 })
     })
 
     it('should be reduced', function() {
       var state = {}
       var action = {type: challenge.actions.checkpoints, checkpoints: ['100 200', '300 400']}
-      var nextState = challenge.gameReducer(state, action)
-      assert.deepEqual(nextState, { checkpoints: [{ x: 100, y: 200 }, { x: 300, y: 400 }] })
+      var nextState = challenge.game(state, action)
+      assert.deepEqual(nextState, { checkpoints: [{ id: 1, x: 100, y: 200 }, { id: 2, x: 300, y: 400 }] })
     })
+  })
+})
+
+describe('players', function() {
+  describe('setPlayerDetails', function() {
+    it('should be able to set player details', function() {
+      var state = []
+      var action = {
+        type: challenge.actions.setPlayerDetails,
+        id: 0,
+        input: '4023 4600 156 -3 359 1'
+      }
+      var nextState = challenge.players(state, action)
+      assert.deepEqual(nextState, [{id: 0, x: 4023, y: 4600, vx: 156, vy: -3, angle: 359, nextCheckPointId: 1}])
+    })
+  })
+})
+
+describe('enemies', function() {
+  describe('setEnemyDetails', function() {
+    it('should be able to set enemy details', function() {
+      var state = []
+      var action = {
+        type: challenge.actions.setEnemyDetails,
+        id: 1,
+        input: '4023 4600 156 -3 359 1'
+      }
+      var nextState = challenge.enemies(state, action)
+      assert.deepEqual(nextState, [{id: 1, x: 4023, y: 4600, vx: 156, vy: -3, angle: 359, nextCheckPointId: 1}])
+    })
+  })
+})
+
+describe('replace', function () {
+  it('should replace number at index in array', function () {
+    var result = challenge.replace([1, 2, 3, 4], 10, 1)
+    var expected = [1, 10, 3, 4]
+    assert.deepEqual(result, expected)
+  })
+
+  it('should replace number at first index in array', function () {
+    var result = challenge.replace([1, 2, 3, 4], 10, 0)
+    var expected = [10, 2, 3, 4]
+    assert.deepEqual(result, expected)
+  })
+
+  it('should replace number at last index in array', function () {
+    var result = challenge.replace([1, 2, 3, 4], 10, 3)
+    var expected = [1, 2, 3, 10]
+    assert.deepEqual(result, expected)
+  })
+
+  it('should replace complex object at index in array', function () {
+    var arr = [{
+      foo: 1
+    }, {
+      foo: 2
+    }, {
+      foo: 4
+    }, {
+      foo: 6
+    }]
+    var result = challenge.replace(arr, { foo: 16 }, 2)
+    var expected = [{
+      foo: 1
+    }, {
+      foo: 2
+    }, {
+      foo: 16
+    }, {
+      foo: 6
+    }]
+
+    assert.deepEqual(result, expected)
   })
 })

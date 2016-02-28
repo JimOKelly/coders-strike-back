@@ -9,31 +9,37 @@ if(typeof printErr != 'function') {
   printErr = console.error;
 }
 
+function curry(fn, scope) {
+    scope = scope || window;
+
+    var args = [];
+    for (var i = 2, len = arguments.length; i < len; ++i) {
+        args.push(arguments[i]);
+    }
+
+    return function() {
+        var args2 = [];
+        for (var i = 0; i < arguments.length; i++) {
+            args.push(arguments[i]);
+        }
+
+        var argstotal = args.concat(args2);
+
+        return fn.apply(scope, argstotal);
+    };
+}
+
 var reducer = combineReducers({
   game: game
 });
-
-var createStore = function(reducer) {
-  var state = {};
-  var dispatch = function(action) {
-    state = reducer(state, action);
-  };
-
-  var getState = function() {
-    return state;
-  };
-
-  return {
-    dispatch: dispatch,
-    getState: getState
-  }
-};
 
 var store = createStore(reducer);
 
 var actions = {
   laps: "LAPS",
-  checkpoints: "CHECKPOINTS"
+  checkpoints: "CHECKPOINTS",
+  setPlayerDetails: "SET_PLAYER_DETAILS",
+  setEnemyDetails: "SET_ENEMY_DETAILS"
 }
 
 function main() {
@@ -49,11 +55,6 @@ function init() {
     return readline();
   });
   store.dispatch({type: actions.checkpoints, checkpoints: checkpoints});
-  // for (var i = 0; i < checkpointCount; i++) {
-  //     var inputs = readline().split(' ');
-  //     var checkpointX = parseInt(inputs[0]);
-  //     var checkpointY = parseInt(inputs[1]);
-  // }
   printErr(json(store.getState()));
 }
 
@@ -86,6 +87,22 @@ function gameLoop() {
   }
 }
 
+function createStore(reducer) {
+  var state = {};
+  var dispatch = function(action) {
+    state = reducer(state, action);
+  };
+
+  var getState = function() {
+    return state;
+  };
+
+  return {
+    dispatch: dispatch,
+    getState: getState
+  }
+}
+
 // reducers
 var initialGameState = {
   width: 16000,
@@ -94,8 +111,6 @@ var initialGameState = {
 
 function game(state, action) {
   state = state || initialGameState;
-
-  if(!action) return state;
 
   switch(action.type) {
     case actions.laps:
@@ -111,9 +126,63 @@ function game(state, action) {
   }
 }
 
-function toCheckPoint(input) {
+function toCheckPoint(input, index) {
   var xy = input.split(' ')
-  return { x: parseInt(xy[0]), y: parseInt(xy[1]) };
+  return { id: index + 1, x: parseInt(xy[0]), y: parseInt(xy[1]) };
+}
+
+function players(state, action) {
+  state = state || [];
+
+  switch(action.type) {
+    case actions.setPlayerDetails:
+      return setDetails(state, action.id, action.input)
+    default:
+      return state;
+  }
+}
+
+function enemies(state, action) {
+  state = state || [];
+
+  switch(action.type) {
+    case actions.setEnemyDetails:
+      return setDetails(state, action.id, action.input)
+    default:
+      return state;
+  }
+}
+
+function setDetails(state, id, input) {
+  var detail = toDetail(id, input);
+  var index = state.indexOf(function(user) {
+    return user.id === action.id
+  });
+
+  if(index !== -1) {
+    return replace(state, detail, index);
+  } else {
+    return state.concat(detail);
+  }
+}
+
+function toDetail(id, input) {
+  var inputs = input.split(' ');
+  return {
+    id: id,
+    x: parseInt(inputs[0]),
+    y: parseInt(inputs[1]),
+    vx: parseInt(inputs[2]),
+    vy: parseInt(inputs[3]),
+    angle: parseInt(inputs[4]),
+    nextCheckPointId: parseInt(inputs[5])
+  };
+}
+
+function replace(arr, obj, index) {
+  return arr.slice(0, index)
+    .concat([obj])
+    .concat(arr.slice(index + 1, arr.length))
 }
 
 function combineReducers(reducers) {
@@ -170,8 +239,11 @@ if(typeof process !== 'object') {
 
 module.exports = {
   assign: assign,
-  gameReducer: game,
+  game: game,
+  players: players,
+  enemies: enemies,
   actions: actions,
   range: range,
-  toCheckPoint: toCheckPoint
+  toCheckPoint: toCheckPoint,
+  replace: replace
 }
