@@ -9,44 +9,22 @@ if(typeof printErr != 'function') {
   printErr = console.error;
 }
 
-function curry(fn, scope) {
-    scope = scope || window;
-
-    var args = [];
-    for (var i = 2, len = arguments.length; i < len; ++i) {
-        args.push(arguments[i]);
-    }
-
-    return function() {
-        var args2 = [];
-        for (var i = 0; i < arguments.length; i++) {
-            args.push(arguments[i]);
-        }
-
-        var argstotal = args.concat(args2);
-
-        return fn.apply(scope, argstotal);
-    };
+function main() {
+  init();
+  gameLoop();
 }
 
-var reducer = combineReducers({
+var store = createStore(combineReducers({
   game: game,
   players: players,
   enemies: enemies
-});
-
-var store = createStore(reducer);
+}));
 
 var actions = {
   laps: "LAPS",
   checkpoints: "CHECKPOINTS",
   setPlayerDetails: "SET_PLAYER_DETAILS",
   setEnemyDetails: "SET_ENEMY_DETAILS"
-}
-
-function main() {
-  init();
-  gameLoop();
 }
 
 function init() {
