@@ -219,3 +219,15 @@ describe('replace', function () {
     assert.deepEqual(result, expected)
   })
 })
+
+describe('getDistanceFromCheckpoint', function () {
+  it('should provide accurate distance calculations', function () {
+    var xy1 = { x: -3, y: 7};
+    var xy2 = { x: 1, y: 2};
+    assert.equal(round(challenge.getDistanceFromCheckpoint(xy1, xy2)), round(6.403))
+  })
+})
+
+function round(n) {
+  return Math.round(n * 100) / 100
+}

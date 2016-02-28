@@ -24,7 +24,8 @@ var actions = {
   laps: "LAPS",
   checkpoints: "CHECKPOINTS",
   setPlayerDetails: "SET_PLAYER_DETAILS",
-  setEnemyDetails: "SET_ENEMY_DETAILS"
+  setEnemyDetails: "SET_ENEMY_DETAILS",
+  turn: "TURN"
 }
 
 function init() {
@@ -39,17 +40,18 @@ function init() {
 
 function gameLoop() {
   while (true) {
-      for (var i = 0; i < 2; i++) {
-        store.dispatch({type: actions.setPlayerDetails, id: i, input: readline()});
-      }
-      for (var i = 0; i < 2; i++) {
-        store.dispatch({type: actions.setEnemyDetails, id: i, input: readline()});
-      }
+    store.dispatch({type: actions.turn});
+    for (var i = 0; i < 2; i++) {
+      store.dispatch({type: actions.setPlayerDetails, id: i, input: readline()});
+    }
+    for (var i = 0; i < 2; i++) {
+      store.dispatch({type: actions.setEnemyDetails, id: i, input: readline()});
+    }
 
-      var state = store.getState();
+    var state = store.getState();
 
-      print(getDestinationCommand(state, 0));
-      print(getDestinationCommand(state, 1));
+    print(getDestinationCommand(state, 0));
+    print(getDestinationCommand(state, 1));
   }
 }
 
@@ -63,13 +65,34 @@ function getDestination(state, playerIndex) {
   var checkpointToTarget = playerIndex === 0 ? playerDetail.nextCheckPointId : playerDetail.nextCheckPointId + 1
   var next = getDestinationAtCheckpointIndex(state, playerDetail.nextCheckPointId);
 
-  var thrust = state.game.maxThrust / 2;
+  var thrust = getThrust(state, playerDetail, next)
 
   return {
     x: next.x,
     y: next.y,
-    thrust: thrust
+    thrust: Math.round(thrust)
   };
+}
+
+function getThrust(state, playerDetail, next) {
+  var distanceFromNext = getDistanceFromCheckpoint(playerDetail, next);
+
+  if(distanceFromNext > (state.game.height / 2)) {
+    return state.game.maxThrust;
+  } else if(distanceFromNext < 1000) {
+    return state.game.maxThrust / 6;
+  } else {
+    return state.game.maxThrust / 2;
+  }
+}
+
+function getDistanceFromCheckpoint(playerLocation, checkpointLocation) {
+  var x = Math.abs(playerLocation.x - checkpointLocation.x);
+  var y = Math.abs(playerLocation.y - checkpointLocation.y);
+
+  var xy = (x * x) + (y * y);
+
+  return Math.sqrt(xy);
 }
 
 function getDestinationAtCheckpointIndex(state, checkpointIndex) {
@@ -125,6 +148,10 @@ function game(state, action) {
   state = state || initialGameState;
 
   switch(action.type) {
+    case actions.turn:
+      return assign({}, state, {
+        turn: state.turn ? state.turn + 1 : 1
+      })
     case actions.laps:
       return assign({}, state, {
         laps: action.laps
@@ -259,5 +286,6 @@ module.exports = {
   range: range,
   toCheckPoint: toCheckPoint,
   replace: replace,
-  setDetails: setDetails
+  setDetails: setDetails,
+  getDistanceFromCheckpoint: getDistanceFromCheckpoint
 };
