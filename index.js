@@ -66,8 +66,11 @@ function getDestinationCommand(strategy, state, playerIndex) {
 
 function standardStrategy(state, playerIndex) {
   var playerDetail = state.players[playerIndex];
-  var checkpointToTarget = playerIndex === 0 ? playerDetail.nextCheckPointId : playerDetail.nextCheckPointId + 1
   var next = getDestinationAtCheckpointIndex(state, playerDetail.nextCheckPointId);
+  var distanceFromNext = getDistanceFromCheckpoint(playerDetail, next);
+  if(distanceFromNext < 100) {
+    next = getDestinationAtCheckpointIndex(state, playerDetail.nextCheckPointId + 1);
+  }
 
   var thrust = getThrust(state, playerDetail, next);
 
@@ -81,12 +84,12 @@ function standardStrategy(state, playerIndex) {
 function getThrust(state, playerDetail, next) {
   var distanceFromNext = getDistanceFromCheckpoint(playerDetail, next);
 
-  if(distanceFromNext > (state.game.height / 2)) {
+  if(distanceFromNext > (state.game.height / 1.5)) {
     return state.game.maxThrust;
   } else if(distanceFromNext < 1000) {
     return state.game.maxThrust / 6;
   } else {
-    return state.game.maxThrust / 2;
+    return state.game.maxThrust / 3;
   }
 }
 
@@ -141,8 +144,9 @@ function getDistanceFromCheckpoint(playerLocation, checkpointLocation) {
 }
 
 function getDestinationAtCheckpointIndex(state, checkpointIndex) {
+  var index = checkpointIndex === (state.game.checkpoints.length) ? 0 : checkpointIndex;
   var nextCheckpoint = state.game.checkpoints.filter(function(checkpoint) {
-    return checkpoint.id === checkpointIndex;
+    return checkpoint.id === index;
   })[0];
 
   return {
