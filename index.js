@@ -238,4 +238,4 @@ module.exports = {
   toCheckPoint: toCheckPoint,
   replace: replace,
   setDetails: setDetails
-}
+};
