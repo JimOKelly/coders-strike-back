@@ -46,35 +46,79 @@ function gameLoop() {
         store.dispatch({type: actions.setEnemyDetails, id: i, input: readline()});
       }
 
-      printErr(json(store.getState()));
-      // Write an action using print()
-      // To debug: printErr('Debug messages...');
+      var state = store.getState();
 
-      print('8000 4500 100');
-      print('8000 4500 100');
+      print(getDestinationCommand(state, 0));
+      print(getDestinationCommand(state, 1));
+  }
+}
+
+function getDestinationCommand(state, playerIndex) {
+  var dest = getDestination(state, playerIndex);
+  return dest.x + ' ' + dest.y + ' ' + dest.thrust;
+}
+
+function getDestination(state, playerIndex) {
+  var playerDetail = state.players[playerIndex];
+  var checkpointToTarget = playerIndex === 0 ? playerDetail.nextCheckPointId : playerDetail.nextCheckPointId + 1
+  var next = getDestinationAtCheckpointIndex(state, playerDetail.nextCheckPointId);
+
+  var thrust = state.game.maxThrust / 2;
+
+  return {
+    x: next.x,
+    y: next.y,
+    thrust: thrust
+  };
+}
+
+function getDestinationAtCheckpointIndex(state, checkpointIndex) {
+  var nextCheckpoint = state.game.checkpoints.filter(function(checkpoint) {
+    return checkpoint.id === checkpointIndex;
+  })[0];
+
+  return {
+    x: nextCheckpoint.x,
+    y: nextCheckpoint.y
   }
 }
 
 function createStore(reducer) {
   var state = {};
+  var listeners = [];
+
   var dispatch = function(action) {
     state = reducer(state, action);
+    listeners.forEach(function(listener) { listener(); })
   };
 
   var getState = function() {
     return state;
   };
 
+  var subscribe = function(listener) {
+      listeners = listeners.concat(listener);
+      return function() {
+        listeners = listeners.filter(function(l) { l !== listener});
+      };
+  };
+
   return {
     dispatch: dispatch,
-    getState: getState
+    getState: getState,
+    subscribe: subscribe
   }
 }
 
 // reducers
 var initialGameState = {
   width: 16000,
-  height: 9000
+  height: 9000,
+  checkpointRadius: 600,
+  podRadius: 600,
+  maxThrust: 200,
+  maxAngleChange: 18, //degrees
+  turnsToMakeItToCheckpoint: 100
 };
 
 function game(state, action) {
@@ -96,7 +140,7 @@ function game(state, action) {
 
 function toCheckPoint(input, index) {
   var xy = input.split(' ');
-  return { id: index + 1, x: parseInt(xy[0]), y: parseInt(xy[1]) };
+  return { id: index, x: parseInt(xy[0]), y: parseInt(xy[1]) };
 }
 
 function players(state, action) {

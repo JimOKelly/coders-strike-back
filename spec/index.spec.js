@@ -42,14 +42,14 @@ describe('game', function() {
 
   describe('checkpoints', function() {
     it('should be able to be mapped through toCheckPoint', function() {
-      assert.deepEqual(challenge.toCheckPoint('90 80', 0), { id: 1, x: 90, y: 80 })
+      assert.deepEqual(challenge.toCheckPoint('90 80', 0), { id: 0, x: 90, y: 80 })
     })
 
     it('should be reduced', function() {
       var state = {}
       var action = {type: challenge.actions.checkpoints, checkpoints: ['100 200', '300 400']}
       var nextState = challenge.game(state, action)
-      assert.deepEqual(nextState, { checkpoints: [{ id: 1, x: 100, y: 200 }, { id: 2, x: 300, y: 400 }] })
+      assert.deepEqual(nextState, { checkpoints: [{ id: 0, x: 100, y: 200 }, { id: 1, x: 300, y: 400 }] })
     })
   })
 })
