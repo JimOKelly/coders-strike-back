@@ -17,5 +17,9 @@
     "url": "https://github.com/ryanolsonx/coders-strike-back/issues"
   },
   "homepage": "https://github.com/ryanolsonx/coders-strike-back#readme",
-  "devDependencies": {}
+  "devDependencies": {
+    "babel-core": "^6.5.2",
+    "babel-loader": "^6.2.4",
+    "webpack": "^1.12.14"
+  }
 }
