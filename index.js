@@ -81,6 +81,16 @@ function standardStrategy(state, playerIndex) {
   };
 }
 
+function followStrategy(state, playerIndex) {
+    var enemy = state.enemies[playerIndex];
+
+    return {
+      x: enemy.x,
+      y: enemy.y,
+      thrust: 150
+    };
+}
+
 function getThrust(state, playerDetail, next) {
   var distanceFromNext = getDistanceFromCheckpoint(playerDetail, next);
 
