@@ -1,3 +1,10 @@
+let state = {
+  game: {
+    width: 16000,
+    height: 9000
+  }
+};
+
 function main() {
   init();
   gameLoop();
