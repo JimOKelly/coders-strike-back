@@ -1,0 +1,21 @@
+{
+  "name": "coders-strike-back",
+  "version": "1.0.0",
+  "description": "This is my solution to this coding challenge found at codingame.com",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha ./spec",
+    "autotest": "mocha ./ --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryanolsonx/coders-strike-back.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ryanolsonx/coders-strike-back/issues"
+  },
+  "homepage": "https://github.com/ryanolsonx/coders-strike-back#readme",
+  "devDependencies": {}
+}
