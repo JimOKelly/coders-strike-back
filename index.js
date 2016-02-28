@@ -32,7 +32,8 @@ var createStore = function(reducer) {
 var store = createStore(reducer);
 
 var actions = {
-  laps: "LAPS"
+  laps: "LAPS",
+  checkpoints: "CHECKPOINTS"
 }
 
 function main() {
@@ -42,13 +43,18 @@ function main() {
 
 function init() {
   store.dispatch({type: actions.laps, laps: parseInt(readline())})
-  printErr(json(store.getState()));
+
   var checkpointCount = parseInt(readline());
-  for (var i = 0; i < checkpointCount; i++) {
-      var inputs = readline().split(' ');
-      var checkpointX = parseInt(inputs[0]);
-      var checkpointY = parseInt(inputs[1]);
-  }
+  var checkpoints = range(checkpointCount).map(function() {
+    return readline();
+  });
+  store.dispatch({type: actions.checkpoints, checkpoints: checkpoints});
+  // for (var i = 0; i < checkpointCount; i++) {
+  //     var inputs = readline().split(' ');
+  //     var checkpointX = parseInt(inputs[0]);
+  //     var checkpointY = parseInt(inputs[1]);
+  // }
+  printErr(json(store.getState()));
 }
 
 function gameLoop() {
@@ -96,9 +102,18 @@ function game(state, action) {
       return assign({}, state, {
         laps: action.laps
       });
+    case actions.checkpoints:
+      return assign({}, state, {
+        checkpoints: action.checkpoints.map(toCheckPoint)
+      })
     default:
       return state;
   }
+}
+
+function toCheckPoint(input) {
+  var xy = input.split(' ')
+  return { x: parseInt(xy[0]), y: parseInt(xy[1]) };
 }
 
 function combineReducers(reducers) {
@@ -113,6 +128,8 @@ function combineReducers(reducers) {
     );
   };
 }
+
+// helpers
 
 function assign(target) {
   'use strict';
@@ -138,6 +155,15 @@ function json(obj) {
   return JSON.stringify(obj);
 }
 
+function range(n) {
+  var arr = [];
+  for(var i = 0; i < n; i++) {
+    arr.push(i);
+  }
+
+  return arr;
+}
+
 if(typeof process !== 'object') {
   main();
 }
@@ -145,5 +171,7 @@ if(typeof process !== 'object') {
 module.exports = {
   assign: assign,
   gameReducer: game,
-  actions: actions
+  actions: actions,
+  range: range,
+  toCheckPoint: toCheckPoint
 }
