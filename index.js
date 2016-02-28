@@ -9,14 +9,27 @@ if(typeof printErr != 'function') {
   printErr = console.error;
 }
 
-var runImmediately = typeof process !== 'object';
+var reducer = combineReducers({
+  game: game
+});
 
-var state = {
-  game: {
-    width: 16000,
-    height: 9000
+var createStore = function(reducer) {
+  var state = {};
+  var dispatch = function(action) {
+    state = reducer(state, action);
+  };
+
+  var getState = function() {
+    return state;
+  };
+
+  return {
+    dispatch: dispatch,
+    getState: getState
   }
 };
+
+var store = createStore(reducer);
 
 var actions = {
   laps: "LAPS"
@@ -28,7 +41,8 @@ function main() {
 }
 
 function init() {
-  var laps = parseInt(readline());
+  store.dispatch({type: actions.laps, laps: parseInt(readline())})
+  printErr(json(store.getState()));
   var checkpointCount = parseInt(readline());
   for (var i = 0; i < checkpointCount; i++) {
       var inputs = readline().split(' ');
@@ -67,14 +81,32 @@ function gameLoop() {
 }
 
 // reducers
-function reducer(state, action) {
-  state = state || {};
+function game(state, action) {
+  state = (typeof state === 'object')
+    ? state
+    : { width: 16000, height: 9000};
+
   if(!action) return state;
 
   switch(action.type) {
     case actions.laps:
-      return state;
+      return assign({}, state, {
+        laps: action.laps
+      });
   }
+}
+
+function combineReducers(reducers) {
+  return function(state, action) {
+    state = state || {}
+    return Object.keys(reducers).reduce(
+      function(nextState, key) {
+        nextState[key] = reducers[key](state[key], action);
+        return nextState;
+      },
+      {}
+    );
+  };
 }
 
 function assign(target) {
@@ -97,14 +129,16 @@ function assign(target) {
   return output;
 }
 
-function assert(condition, message) {
-    if (!condition) {
-        throw message || "Assertion failed";
-    }
+function json(obj) {
+  return JSON.stringify(obj);
 }
 
-if(runImmediately) {
+if(typeof process !== 'object') {
   main();
 }
 
-module.exports = { assign: assign }
+module.exports = {
+  assign: assign,
+  reducer: reducer,
+  actions: actions
+}
