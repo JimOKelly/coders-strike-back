@@ -10,15 +10,26 @@ describe('assign', function() {
   })
 })
 
-describe('reducer', function() {
-  it('should reduce laps', function() {
-    var action = {type: challenge.actions.laps, laps: 2}
-    var state = {}
-    var nextState = challenge.reducer(state, action)
-    assert.deepEqual(nextState, { game: { width: 16000, height: 9000, laps: 2} })
+describe('game reducer', function() {
+  describe('laps', function() {
+    it('should be able to set with existing state', function() {
+      var action = {type: challenge.actions.laps, laps: 2}
+      var state = { height: 1000 }
+      var nextState = challenge.gameReducer(state, action)
+      assert.deepEqual(nextState, { height: 1000, laps: 2 })
+    })
 
-    state = { game: { height: 1000} }
-    nextState = challenge.reducer(state, action)
-    assert.deepEqual(nextState, { game: { height: 1000, laps: 2} })
+    it('should be able to set with undefined state', function() {
+      var action = {type: challenge.actions.laps, laps: 2}
+      var state = undefined
+      var nextState = challenge.gameReducer(state, action)
+      assert(nextState.laps === 2)
+    })
+
+    it('should be able to return current state with unknown action', function() {
+      var state = { laps: 4 }
+      var nextState = challenge.gameReducer(state, {type: "unknown"});
+      assert.deepEqual(nextState, { laps: 4 })
+    })
   })
 })

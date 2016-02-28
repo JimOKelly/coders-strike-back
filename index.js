@@ -81,10 +81,13 @@ function gameLoop() {
 }
 
 // reducers
+var initialGameState = {
+  width: 16000,
+  height: 9000
+};
+
 function game(state, action) {
-  state = (typeof state === 'object')
-    ? state
-    : { width: 16000, height: 9000};
+  state = state || initialGameState;
 
   if(!action) return state;
 
@@ -93,6 +96,8 @@ function game(state, action) {
       return assign({}, state, {
         laps: action.laps
       });
+    default:
+      return state;
   }
 }
 
@@ -139,6 +144,6 @@ if(typeof process !== 'object') {
 
 module.exports = {
   assign: assign,
-  reducer: reducer,
+  gameReducer: game,
   actions: actions
 }
