@@ -30,7 +30,9 @@ function curry(fn, scope) {
 }
 
 var reducer = combineReducers({
-  game: game
+  game: game,
+  players: players,
+  enemies: enemies
 });
 
 var store = createStore(reducer);
@@ -55,30 +57,18 @@ function init() {
     return readline();
   });
   store.dispatch({type: actions.checkpoints, checkpoints: checkpoints});
-  printErr(json(store.getState()));
 }
 
 function gameLoop() {
   while (true) {
       for (var i = 0; i < 2; i++) {
-          var inputs = readline().split(' ');
-          var x = parseInt(inputs[0]);
-          var y = parseInt(inputs[1]);
-          var vx = parseInt(inputs[2]);
-          var vy = parseInt(inputs[3]);
-          var angle = parseInt(inputs[4]);
-          var nextCheckPointId = parseInt(inputs[5]);
+        store.dispatch({type: actions.setPlayerDetails, id: i, input: readline()});
       }
       for (var i = 0; i < 2; i++) {
-          var inputs = readline().split(' ');
-          var x = parseInt(inputs[0]);
-          var y = parseInt(inputs[1]);
-          var vx = parseInt(inputs[2]);
-          var vy = parseInt(inputs[3]);
-          var angle = parseInt(inputs[4]);
-          var nextCheckPointId = parseInt(inputs[5]);
+        store.dispatch({type: actions.setEnemyDetails, id: i, input: readline()});
       }
 
+      printErr(json(store.getState()));
       // Write an action using print()
       // To debug: printErr('Debug messages...');
 
@@ -120,14 +110,14 @@ function game(state, action) {
     case actions.checkpoints:
       return assign({}, state, {
         checkpoints: action.checkpoints.map(toCheckPoint)
-      })
+      });
     default:
       return state;
   }
 }
 
 function toCheckPoint(input, index) {
-  var xy = input.split(' ')
+  var xy = input.split(' ');
   return { id: index + 1, x: parseInt(xy[0]), y: parseInt(xy[1]) };
 }
 
@@ -136,7 +126,7 @@ function players(state, action) {
 
   switch(action.type) {
     case actions.setPlayerDetails:
-      return setDetails(state, action.id, action.input)
+      return setDetails(state, toDetail(action.id, action.input));
     default:
       return state;
   }
@@ -147,22 +137,23 @@ function enemies(state, action) {
 
   switch(action.type) {
     case actions.setEnemyDetails:
-      return setDetails(state, action.id, action.input)
+      return setDetails(state, toDetail(action.id, action.input));
     default:
       return state;
   }
 }
 
-function setDetails(state, id, input) {
-  var detail = toDetail(id, input);
-  var index = state.indexOf(function(user) {
-    return user.id === action.id
+// detail.id is expected
+function setDetails(state, detail) {
+  var existing = state.filter(function(d) {
+    return d.id === detail.id
   });
 
-  if(index !== -1) {
-    return replace(state, detail, index);
-  } else {
+  if(state.length === 0 || !existing.length) {
     return state.concat(detail);
+  } else {
+    var index = state.indexOf(existing[0]);
+    return replace(state, detail, index);
   }
 }
 
@@ -182,7 +173,7 @@ function toDetail(id, input) {
 function replace(arr, obj, index) {
   return arr.slice(0, index)
     .concat([obj])
-    .concat(arr.slice(index + 1, arr.length))
+    .concat(arr.slice(index + 1, arr.length));
 }
 
 function combineReducers(reducers) {
@@ -245,5 +236,6 @@ module.exports = {
   actions: actions,
   range: range,
   toCheckPoint: toCheckPoint,
-  replace: replace
+  replace: replace,
+  setDetails: setDetails
 }

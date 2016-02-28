@@ -84,6 +84,98 @@ describe('enemies', function() {
   })
 })
 
+describe('setDetails', function () {
+  it('should only update when there are a max amount of people', function () {
+    var state = [{
+      id: 0,
+      title: 'before 0'
+    }, {
+      id: 1,
+      title: 'before 1'
+    }];
+
+    var newItem = {
+      id: 0,
+      title: 'after 0'
+    };
+
+    var expected = [{
+      id: 0,
+      title: 'after 0'
+    }, {
+      id: 1,
+      title: 'before 1'
+    }];
+
+    var result = challenge.setDetails(state, newItem)
+    assert.equal(result.length, expected.length)
+    assert.deepEqual(result, expected)
+  })
+
+  it('should add when there are no players', function () {
+    var state = [];
+
+    var newItem = {
+      id: 0,
+      title: 'after 0'
+    };
+
+    var expected = [{
+      id: 0,
+      title: 'after 0'
+    }];
+
+    var result = challenge.setDetails(state, newItem)
+    assert.equal(result.length, expected.length)
+    assert.deepEqual(result, expected)
+  })
+
+  it('should add when there is one player', function() {
+    var state = [{
+      id: 0,
+      title: 'before 0'
+    }];
+
+    var newItem = {
+      id: 1,
+      title: 'after 1'
+    };
+
+    var expected = [{
+      id: 0,
+      title: 'before 0'
+    }, {
+      id: 1,
+      title: 'after 1'
+    }];
+
+    var result = challenge.setDetails(state, newItem)
+    assert.equal(result.length, expected.length)
+    assert.deepEqual(result, expected)
+  })
+
+  it('should update matching player if there is only one', function() {
+    var state = [{
+      id: 0,
+      title: 'before 0'
+    }];
+
+    var newItem = {
+      id: 0,
+      title: 'after 0'
+    };
+
+    var expected = [{
+      id: 0,
+      title: 'after 0'
+    }];
+
+    var result = challenge.setDetails(state, newItem)
+    assert.equal(result.length, expected.length)
+    assert.deepEqual(result, expected)
+  })
+})
+
 describe('replace', function () {
   it('should replace number at index in array', function () {
     var result = challenge.replace([1, 2, 3, 4], 10, 1)
