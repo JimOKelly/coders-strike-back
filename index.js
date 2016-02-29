@@ -55,114 +55,118 @@ function step() {
 
   var state = store.getState();
 
-  print(getDestinationCommand(standardStrategy, state, 0));
-  print(getDestinationCommand(standardStrategy, state, 1));
-}
-
-function getDestinationCommand(strategy, state, playerIndex) {
-  var dest = strategy(state, playerIndex);
-  return dest.x + ' ' + dest.y + ' ' + dest.thrust;
+  var pod1Strategy = turnStrategy(state, 0);
+  pod1Strategy();
+  var pod2Strategy = standardStrategy(state, 1);
+  pod2Strategy();
 }
 
 function standardStrategy(state, playerIndex) {
   var playerDetail = state.players[playerIndex];
-  var next = getDestinationAtCheckpointIndex(state, playerDetail.nextCheckPointId);
-  var distanceFromNext = getDistanceFromCheckpoint(playerDetail, next);
-  if(distanceFromNext < 100) {
-    next = getDestinationAtCheckpointIndex(state, playerDetail.nextCheckPointId + 1);
-  }
 
-  var thrust = getThrust(state, playerDetail, next);
+  var getCheckpoint = function(index) {
+    index = (index === state.game.checkpoints.length)
+      ? 0
+      : index;
 
-  return {
-    x: next.x,
-    y: next.y,
-    thrust: Math.round(thrust)
-  };
-}
-
-function followStrategy(state, playerIndex) {
-    var enemy = state.enemies[playerIndex];
+    var nextCheckpoint = state.game.checkpoints.filter(function(checkpoint) {
+      return checkpoint.id === index;
+    })[0];
 
     return {
-      x: enemy.x,
-      y: enemy.y,
-      thrust: 150
-    };
-}
-
-function getThrust(state, playerDetail, next) {
-  var distanceFromNext = getDistanceFromCheckpoint(playerDetail, next);
-
-  if(distanceFromNext > (state.game.height / 1.5)) {
-    return state.game.maxThrust;
-  } else if(distanceFromNext < 1000) {
-    return state.game.maxThrust / 6;
-  } else {
-    return state.game.maxThrust / 3;
+      x: nextCheckpoint.x,
+      y: nextCheckpoint.y
+    }
   }
-}
 
-function killerStrategy(state, playerIndex) {
-  var playerDetail = state.players[playerIndex];
-  var target = state.game.turn > 100 && state.game.turn < 200
-    ? getClosestEnemy(state.enemies, playerDetail)
-    : getFurthestEnemy(state.enemies, playerDetail);
+  var getNextCheckpoint = function() {
+    var checkpoint = getCheckpoint(playerDetail.nextCheckPointId);
+    var distanceFromNext = getDistanceBetweenPoints(playerDetail, checkpoint);
+    if(distanceFromNext < 100) {
+      checkpoint = getCheckpoint(state, playerDetail.nextCheckPointId + 1);
+    }
 
-  return {
-    x: target.x,
-    y: target.y,
-    thrust: 150
+    return checkpoint;
   };
+
+  var getThrust = function(nextCheckpoint) {
+    return 100;
+    // var thrust;
+    // var distanceFromNext = getDistanceBetweenPoints(playerDetail, nextCheckpoint);
+    //
+    // if(distanceFromNext > (state.game.height / 1.5)) {
+    //   thrust = state.game.maxThrust;
+    // } else if(distanceFromNext < 1000) {
+    //   thrust = state.game.maxThrust / 6;
+    // } else {
+    //   thrust = state.game.maxThrust / 3;
+    // }
+    //
+    // return Math.round(thrust);
+  }
+
+  var getMove = function() {
+    var next = getNextCheckpoint();
+    var thrust = getThrust(next);
+
+    return {
+      x: next.x,
+      y: next.y,
+      thrust: thrust
+    };
+  };
+
+  var move = function() {
+    var move = getMove();
+    var command = getCommandForMove(move);
+
+    print(command);
+  };
+
+  return function() { move() };
 }
 
-function getClosestEnemy(enemies, playerDetail) {
-  var enemiesWithDistances = getEnemiesWithDistances(enemies, playerDetail);
+function turnStrategy(state, playerIndex) {
+  var playerDetail = state.players[playerIndex];
 
-  var closestEnemyIndex = enemiesWithDistances.reduce(function(closest, enemy, index) {
-    return enemy.distance < enemiesWithDistances[closest].distance ? index : closest;
-  }, 0);
+  var getMove = function() {
+    var topLeft = { x: 0, y: 0 };
+    var topMiddle = { x: 8000, y: 0 };
+    var turning = playerDetail.angle < 270 && getDistanceBetweenPoints(playerDetail, topLeft) < 4000;
+    var next = !turning ? topLeft : topMiddle;
+    var thrust = turning ? 100 : 50;//!turning ? 50 : 2;
 
-  return enemies[closestEnemyIndex];
+    printErr(json(playerDetail));
+
+    return {
+      x: next.x,
+      y: next.y,
+      thrust: thrust
+    };
+  };
+
+  var move = function() {
+    var move = getMove();
+    var command = getCommandForMove(move);
+
+    print(command);
+  };
+
+  return function() { move(); };
 }
 
-function getFurthestEnemy(enemies, playerDetail) {
-  var enemiesWithDistances = getEnemiesWithDistances(enemies, playerDetail);
 
-  var closestEnemyIndex = enemiesWithDistances.reduce(function(closest, enemy, index) {
-    return enemy.distance > enemiesWithDistances[closest].distance ? index : closest;
-  }, 0);
-
-  return enemies[closestEnemyIndex];
+function getCommandForMove(move) {
+  return move.x + ' ' + move.y + ' ' + move.thrust;
 }
 
-function getEnemiesWithDistances(enemies, playerDetail) {
-  return enemies.map(function(enemy) {
-    return assign({}, enemy, {
-      distance: getDistanceFromCheckpoint(playerDetail, enemy)
-    });
-  });
-}
-
-function getDistanceFromCheckpoint(playerLocation, checkpointLocation) {
-  var x = Math.abs(playerLocation.x - checkpointLocation.x);
-  var y = Math.abs(playerLocation.y - checkpointLocation.y);
+function getDistanceBetweenPoints(point1, point2) {
+  var x = Math.abs(point1.x - point2.x);
+  var y = Math.abs(point1.y - point2.y);
 
   var xy = (x * x) + (y * y);
 
   return Math.sqrt(xy);
-}
-
-function getDestinationAtCheckpointIndex(state, checkpointIndex) {
-  var index = checkpointIndex === (state.game.checkpoints.length) ? 0 : checkpointIndex;
-  var nextCheckpoint = state.game.checkpoints.filter(function(checkpoint) {
-    return checkpoint.id === index;
-  })[0];
-
-  return {
-    x: nextCheckpoint.x,
-    y: nextCheckpoint.y
-  }
 }
 
 function createStore(reducer) {
@@ -346,5 +350,5 @@ module.exports = {
   toCheckPoint: toCheckPoint,
   replace: replace,
   setDetails: setDetails,
-  getDistanceFromCheckpoint: getDistanceFromCheckpoint
+  getDistanceBetweenPoints: getDistanceBetweenPoints
 };
