@@ -1,310 +1,137 @@
-// for tests
-if (typeof readline != 'function') {
-  readline = function() { return ""; }
-}
-if(typeof print != 'function') {
-  print = console.log;
-}
-if(typeof printErr != 'function') {
-  printErr = console.error;
+var state = {
+  playersCount: 2,
+  enemiesCount: 2,
+  map: {
+    width: 16000,
+    height: 9000
+  },
+  turn: 1
 }
 
 function main() {
-  init();
-  gameLoop();
-}
-
-var store = createStore(combineReducers({
-  game: game,
-  players: players,
-  enemies: enemies
-}));
-
-var actions = {
-  laps: "LAPS",
-  checkpoints: "CHECKPOINTS",
-  setPlayerDetails: "SET_PLAYER_DETAILS",
-  setEnemyDetails: "SET_ENEMY_DETAILS",
-  turn: "TURN"
-}
-
-function init() {
-  store.dispatch({type: actions.laps, laps: parseInt(readline())})
-
-  var checkpointCount = parseInt(readline());
-  var checkpoints = range(checkpointCount).map(function() {
-    return readline();
-  });
-  store.dispatch({type: actions.checkpoints, checkpoints: checkpoints});
-}
-
-function gameLoop() {
-  while (true) {
-    step();
-  }
+    state = getStartingState()
+    while(true) {
+      step()
+    }
 }
 
 function step() {
-  store.dispatch({type: actions.turn});
-  for (var i = 0; i < 2; i++) {
-    store.dispatch({type: actions.setPlayerDetails, id: i, input: readline()});
-  }
-  for (var i = 0; i < 2; i++) {
-    store.dispatch({type: actions.setEnemyDetails, id: i, input: readline()});
-  }
+  var players = range(state.playersCount).map(readline).map(createPod)
+  var enemies = range(state.enemiesCount).map(readline).map(createPod)
 
-  var state = store.getState();
+  players.forEach(function(player) {
+    move(player)
+  })
 
-  var pod1Strategy = turnStrategy(state, 0);
-  pod1Strategy();
-  var pod2Strategy = standardStrategy(state, 1);
-  pod2Strategy();
+  state.turn = state.turn + 1
 }
 
-function standardStrategy(state, playerIndex) {
-  var playerDetail = state.players[playerIndex];
+function move(player) {
+  var checkpoint = getCheckpointById(player.nextCheckpointId)
+  var turnsUntilReachCheckpoint = getTurnsUntilCheckpoint(player, checkpoint)
+  var continueThrusting = turnsUntilReachCheckpoint > 4
+  var thrust = continueThrusting ? 100 : 0
 
-  var getCheckpoint = function(index) {
-    index = (index === state.game.checkpoints.length)
-      ? 0
-      : index;
+  print(checkpoint.x + " " + checkpoint.y + " " + thrust)
+}
 
-    var nextCheckpoint = state.game.checkpoints.filter(function(checkpoint) {
-      return checkpoint.id === index;
-    })[0];
+function getTurnsUntilCheckpoint(player, checkpoint) {
+  var turns = 0
+    , point = { x: player.x, y: player.y }
+    , lastDistanceFrom
 
-    return {
-      x: nextCheckpoint.x,
-      y: nextCheckpoint.y
+  //if we're not moving..
+  if(player.vx + player.vy === 0) {
+      return Infinity
+  }
+
+  //so it won't be too slow of a calculation
+  if(Math.abs(player.vx) < 100 && Math.abs(player.vy) < 100) {
+    return Infinity
+  }
+
+  while(true) {
+    var distanceFrom = getDistanceBetweenPoints(checkpoint, point)
+    var isInside = isInCheckpoint(distanceFrom)
+    if (isInside) {
+      printErr('inside!')
+      return turns
     }
-  }
 
-  var getNextCheckpoint = function() {
-    var checkpoint = getCheckpoint(playerDetail.nextCheckPointId);
-    var distanceFromNext = getDistanceBetweenPoints(playerDetail, checkpoint);
-    if(distanceFromNext < 100) {
-      checkpoint = getCheckpoint(state, playerDetail.nextCheckPointId + 1);
+    if (lastDistanceFrom && distanceFrom > lastDistanceFrom) {
+      printErr('were not going to make it......')
+      return Infinity
     }
 
-    return checkpoint;
-  };
-
-  var getThrust = function(nextCheckpoint) {
-    return 100;
-    // var thrust;
-    // var distanceFromNext = getDistanceBetweenPoints(playerDetail, nextCheckpoint);
-    //
-    // if(distanceFromNext > (state.game.height / 1.5)) {
-    //   thrust = state.game.maxThrust;
-    // } else if(distanceFromNext < 1000) {
-    //   thrust = state.game.maxThrust / 6;
-    // } else {
-    //   thrust = state.game.maxThrust / 3;
-    // }
-    //
-    // return Math.round(thrust);
+    printErr('maybe after another turn..')
+    lastDistanceFrom = distanceFrom
+    turns = turns + 1
+    if(turns > 7) {
+      return Infinity
+    }
+    point = { x: point.x + player.vx, y: point.y + player.vy }
   }
-
-  var getMove = function() {
-    var next = getNextCheckpoint();
-    var thrust = getThrust(next);
-
-    return {
-      x: next.x,
-      y: next.y,
-      thrust: thrust
-    };
-  };
-
-  var move = function() {
-    var move = getMove();
-    var command = getCommandForMove(move);
-
-    print(command);
-  };
-
-  return function() { move() };
 }
 
-function turnStrategy(state, playerIndex) {
-  var playerDetail = state.players[playerIndex];
+function isInCheckpoint(distanceFrom) {
+  var radius = 600
 
-  var getMove = function() {
-    var topLeft = { x: 0, y: 0 };
-    var topMiddle = { x: 8000, y: 0 };
-    var turning = playerDetail.angle < 270 && getDistanceBetweenPoints(playerDetail, topLeft) < 4000;
-    var next = !turning ? topLeft : topMiddle;
-    var thrust = turning ? 100 : 50;//!turning ? 50 : 2;
-
-    printErr(json(playerDetail));
-
-    return {
-      x: next.x,
-      y: next.y,
-      thrust: thrust
-    };
-  };
-
-  var move = function() {
-    var move = getMove();
-    var command = getCommandForMove(move);
-
-    print(command);
-  };
-
-  return function() { move(); };
+  return distanceFrom < radius
 }
 
-
-function getCommandForMove(move) {
-  return move.x + ' ' + move.y + ' ' + move.thrust;
-}
-
+// assumes point1 and point2 both have {x, y}
 function getDistanceBetweenPoints(point1, point2) {
-  var x = Math.abs(point1.x - point2.x);
-  var y = Math.abs(point1.y - point2.y);
+  var x = Math.abs(point1.x - point2.x)
+  var y = Math.abs(point1.y - point2.y)
 
-  var xy = (x * x) + (y * y);
+  var xy = (x * x) + (y * y)
 
-  return Math.sqrt(xy);
+  return Math.sqrt(xy)
 }
 
-function createStore(reducer) {
-  var state = {};
-  var listeners = [];
+// state
+function getStartingState() {
+  var laps = parseInt(readline());
+  var checkpointCount = parseInt(readline());
+  var checkpoints = range(checkpointCount)
+    .map(readline)
+    .map(asCheckpoint)
 
-  var dispatch = function(action) {
-    state = reducer(state, action);
-    listeners.forEach(function(listener) { listener(); })
-  };
+  return assign({}, state, {
+    laps: laps,
+    checkpoints: checkpoints
+  })
+}
 
-  var getState = function() {
-    return state;
-  };
-
-  var subscribe = function(listener) {
-      listeners = listeners.concat(listener);
-      return function() {
-        listeners = listeners.filter(function(l) { l !== listener});
-      };
-  };
-
+function asCheckpoint(input, index) {
+  var inputs = input.split(' ')
   return {
-    dispatch: dispatch,
-    getState: getState,
-    subscribe: subscribe
-  }
-}
-
-// reducers
-var initialGameState = {
-  width: 16000,
-  height: 9000,
-  checkpointRadius: 600,
-  podRadius: 600,
-  maxThrust: 200,
-  maxAngleChange: 18, //degrees
-  turnsToMakeItToCheckpoint: 100
-};
-
-function game(state, action) {
-  state = state || initialGameState;
-
-  switch(action.type) {
-    case actions.turn:
-      return assign({}, state, {
-        turn: state.turn ? state.turn + 1 : 1
-      })
-    case actions.laps:
-      return assign({}, state, {
-        laps: action.laps
-      });
-    case actions.checkpoints:
-      return assign({}, state, {
-        checkpoints: action.checkpoints.map(toCheckPoint)
-      });
-    default:
-      return state;
-  }
-}
-
-function toCheckPoint(input, index) {
-  var xy = input.split(' ');
-  return { id: index, x: parseInt(xy[0]), y: parseInt(xy[1]) };
-}
-
-function players(state, action) {
-  state = state || [];
-
-  switch(action.type) {
-    case actions.setPlayerDetails:
-      return setDetails(state, toDetail(action.id, action.input));
-    default:
-      return state;
-  }
-}
-
-function enemies(state, action) {
-  state = state || [];
-
-  switch(action.type) {
-    case actions.setEnemyDetails:
-      return setDetails(state, toDetail(action.id, action.input));
-    default:
-      return state;
-  }
-}
-
-// detail.id is expected
-function setDetails(state, detail) {
-  var existing = state.filter(function(d) {
-    return d.id === detail.id
-  });
-
-  if(state.length === 0 || !existing.length) {
-    return state.concat(detail);
-  } else {
-    var index = state.indexOf(existing[0]);
-    return replace(state, detail, index);
-  }
-}
-
-function toDetail(id, input) {
-  var inputs = input.split(' ');
-  return {
-    id: id,
+    id: index,
     x: parseInt(inputs[0]),
-    y: parseInt(inputs[1]),
-    vx: parseInt(inputs[2]),
-    vy: parseInt(inputs[3]),
-    angle: parseInt(inputs[4]),
-    nextCheckPointId: parseInt(inputs[5])
-  };
+    y: parseInt(inputs[1])
+  }
 }
 
-function replace(arr, obj, index) {
-  return arr.slice(0, index)
-    .concat([obj])
-    .concat(arr.slice(index + 1, arr.length));
+function createPod(input) {
+  var inputs = input.split(' ').map(parseInt);
+
+  return {
+    x: inputs[0],
+    y: inputs[1],
+    vx: inputs[2],
+    vy: inputs[3],
+    angle: inputs[4],
+    nextCheckpointId: inputs[5]
+  }
 }
 
-function combineReducers(reducers) {
-  return function(state, action) {
-    state = state || {}
-    return Object.keys(reducers).reduce(
-      function(nextState, key) {
-        nextState[key] = reducers[key](state[key], action);
-        return nextState;
-      },
-      {}
-    );
-  };
+function getCheckpointById(id) {
+  return state.checkpoints.filter(function (cp) {
+    return cp.id === id
+  })[0] //null check this
 }
-
-// helpers
 
 function assign(target) {
-  'use strict';
   if (target === undefined || target === null) {
     throw new TypeError('Cannot convert undefined or null to object');
   }
@@ -323,32 +150,13 @@ function assign(target) {
   return output;
 }
 
-function json(obj) {
-  return JSON.stringify(obj);
-}
-
 function range(n) {
-  var arr = [];
+  var arr = []
   for(var i = 0; i < n; i++) {
-    arr.push(i);
+    arr = arr.concat([i])
   }
 
-  return arr;
+  return arr
 }
 
-if(typeof process !== 'object') {
-  main();
-}
-
-module.exports = {
-  assign: assign,
-  game: game,
-  players: players,
-  enemies: enemies,
-  actions: actions,
-  range: range,
-  toCheckPoint: toCheckPoint,
-  replace: replace,
-  setDetails: setDetails,
-  getDistanceBetweenPoints: getDistanceBetweenPoints
-};
+main()

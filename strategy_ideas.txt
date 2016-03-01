@@ -1,0 +1,1 @@
+simple strategy : Go to next checkpoint, stop accelerating 4 turn before arriving and start rotating toward the following checkpoint
