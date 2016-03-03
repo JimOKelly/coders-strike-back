@@ -1,21 +1,14 @@
 var _ = require('./util')
+var data = require('./data')
 
 module.exports = {
   run: run
 }
 
-var state = {
-  playersCount: 2,
-  enemiesCount: 2,
-  map: {
-    width: 16000,
-    height: 9000
-  },
-  turn: 1
-}
+var state
 
 function run() {
-    state = getStartingState()
+    state = data.getStartingState(readline)
     while(true) {
       step()
     }
@@ -38,7 +31,7 @@ function move(player) {
   var continueThrusting = turnsUntilReachCheckpoint > 4
   var thrust = continueThrusting ? 100 : 0
 
-  print(checkpoint.x + " " + checkpoint.y + " " + 200)
+  print(checkpoint.x + " " + checkpoint.y + " " + thrust)
 }
 
 function getTurnsUntilCheckpoint(player, checkpoint) {
@@ -93,29 +86,6 @@ function getDistanceBetweenPoints(point1, point2) {
   var xy = (x * x) + (y * y)
 
   return Math.sqrt(xy)
-}
-
-// state
-function getStartingState() {
-  var laps = parseInt(readline());
-  var checkpointCount = parseInt(readline());
-  var checkpoints = _.range(checkpointCount)
-    .map(readline)
-    .map(asCheckpoint)
-
-  return _.assign({}, state, {
-    laps: laps,
-    checkpoints: checkpoints
-  })
-}
-
-function asCheckpoint(input, index) {
-  var inputs = input.split(' ')
-  return {
-    id: index,
-    x: parseInt(inputs[0]),
-    y: parseInt(inputs[1])
-  }
 }
 
 function createPod(input) {
